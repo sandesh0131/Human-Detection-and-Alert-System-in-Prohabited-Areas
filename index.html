@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVision | Surveillance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-title">
+                <h1>🔴 SecureVision Dashboard</h1>
+                <p>Real-Time Human Activity Detection</p>
+            </div>
+            {% if camera_active %}
+                <div class="status-badge live">System Active</div>
+            {% else %}
+                <div class="status-badge offline">System Offline</div>
+            {% endif %}
+        </header>
+
+        <div class="grid">
+            <div class="main-panel">
+                <div class="panel-header">
+                    <h2>Live Camera Feed</h2>
+                    {% if camera_active %}<span class="live-indicator">● LIVE</span>{% endif %}
+                </div>
+                <div class="video-container">
+                    {% if camera_active %}
+                        <img src="{{ url_for('video_feed') }}" class="stream" alt="Camera Feed">
+                    {% else %}
+                        <div class="offline-screen">
+                            <h2>📷 Camera is OFF</h2>
+                            <p>Select a camera source from the right panel and click Start.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="side-panel">
+                
+                <div class="card controls-card">
+                    <h3>⚙️ Camera Setup</h3>
+                    <form action="/start_camera" method="POST" class="control-form">
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="cam_type" value="webcam" checked onchange="toggleIPInput()"> Laptop Webcam
+                            </label>
+                            <label>
+                                <input type="radio" name="cam_type" value="ip" onchange="toggleIPInput()"> IP Camera (DroidCam)
+                            </label>
+                        </div>
+
+                        <input type="text" name="camera_ip" id="ip_input" placeholder="http://192.168.x.x:4747/video" style="display: none;">
+                        
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-primary">Start Monitoring</button>
+                        </div>
+                    </form>
+
+                    {% if camera_active %}
+                    <form action="/stop_camera" method="POST" class="control-form mt-2">
+                        <button type="submit" class="btn btn-danger">Stop Camera</button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <div class="card logs-card">
+                    <h3>⚠️ Recent Security Logs</h3>
+                    <div class="log-gallery" id="logs-container">
+                        <p class="loading-text">Loading logs...</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleIPInput() {
+            var isIP = document.querySelector('input[name="cam_type"]:checked').value === 'ip';
+            document.getElementById('ip_input').style.display = isIP ? 'block' : 'none';
+            document.getElementById('ip_input').required = isIP;
+        }
+
+        function updateDashboardData() {
+            fetch('/get_data')
+                .then(response => response.json())
+                .then(data => {
+                    const logsContainer = document.getElementById('logs-container');
+                    logsContainer.innerHTML = '';
+                    
+                    if (data.logs.length === 0) {
+                        logsContainer.innerHTML = '<p class="empty-text">No suspicious activity detected.</p>';
+                        return;
+                    } 
+                    
+                    data.logs.forEach(log => {
+                        let imgUrl = `/static/logs/${log}`;
+                        let timestamp = log.replace('susp_log_', '').replace('.jpg', '');
+                        logsContainer.innerHTML += `
+                            <div class="log-item">
+                                <img src="${imgUrl}" alt="Log" loading="lazy">
+                                <div class="log-time">${timestamp}</div>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(err => console.error("Error fetching data: ", err));
+        }
+
+        updateDashboardData();
+        setInterval(updateDashboardData, 3000);
+    </script>
+</body>
+</html>

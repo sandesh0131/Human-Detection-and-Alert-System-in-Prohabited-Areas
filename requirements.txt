@@ -1,0 +1,9 @@
+Flask
+Werkzeug
+opencv-python
+ultralytics
+numpy
+face_recognition
+pyttsx3
+twilio
+dlib-19.24.99-cp311-cp311-win_amd64.whl
